@@ -40,11 +40,11 @@ jobs:
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
-      # Ensure CloudWatch log group exists
-      - name: Create CloudWatch log group if missing
-        run: |
-          aws logs describe-log-groups --log-group-name-prefix /ecs/my-node-app --region ap-south-1 \
-          || aws logs create-log-group --log-group-name /ecs/my-node-app --region ap-south-1
+      # # Ensure CloudWatch log group exists
+      # - name: Create CloudWatch log group if missing
+      #   run: |
+      #     aws logs describe-log-groups --log-group-name-prefix /ecs/my-node-app --region ap-south-1 \
+      #     || aws logs create-log-group --log-group-name /ecs/my-node-app --region ap-south-1
 
       # Replace <IMAGE_URI> in ECS task definition
       - name: Fill in the new image ID in the ECS task definition
