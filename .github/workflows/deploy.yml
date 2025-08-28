@@ -1,53 +1,55 @@
-name: Deploy to ECS
+name: Deploy to Amazon ECS
 
 on:
   push:
     branches:
-      - main # deploy only when code is merged to main
+      - main # Change if your default branch is different
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      # Configure AWS credentials (from GitHub Secrets)
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ap-south-1 # Change if you're in another region
 
-      - name: Log in to Amazon ECR
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
         id: login-ecr
-
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image
+      # Build and push Docker image
+      - name: Build, tag, and push image to ECR
         id: build-image
         run: |
-          IMAGE_TAG=${{ github.sha }}
+          IMAGE_TAG=${{ github.sha }}   # Immutable tag (commit SHA)
           ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY=my-node-app
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-          echo "Building Docker image..."
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
-          echo "image=$IMAGE_URI" >> $GITHUB_OUTPUT
-
-      - name: Fill in my-node-app.json
+      # Replace <IMAGE_URI> in ECS task definition
+      - name: Fill in the new image ID in the ECS task definition
         run: |
-          IMAGE_URI=${{ steps.build-image.outputs.image }}
-          echo "[{\"name\":\"my-node-app\",\"imageUri\":\"$IMAGE_URI\"}]" > my-node-app.json
+          sed -i "s|<IMAGE_URI>|${IMAGE_URI}|g" ecs-task-def.json
 
-      - name: Deploy to ECS
+      # Deploy to ECS
+      - name: Deploy to Amazon ECS service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ecs-task-def.json
-          service: my-node-task-service-h5p0zgwg
-          cluster: my-node-cluster
+          service: my-node-task-service-h5p0zgwg # ⚡ Replace with your ECS service name
+          cluster: my-node-cluster # ⚡ Replace with your ECS cluster name
           wait-for-service-stability: true
