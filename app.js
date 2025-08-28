@@ -8,7 +8,7 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   console.log("Hello form the route '/'");
-  res.send("Hello World!");
+  res.send("Hello AWS :)");
 });
 
 app.get("/health", (req, res) => {
